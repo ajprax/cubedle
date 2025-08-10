@@ -1,0 +1,58 @@
+Create a web application using Django that runs in Heroku.
+
+The application will allow users to vote on which Magic: The Gathering cards should be included in my cube list, suggest new cards, and view standings based on past voting.
+
+The application should have a database of cards. For each card, the database sohuld include the full name and the current matchmaking values. A card's matchmaking values are defined by the Glicko-2 rating system (https://en.wikipedia.org/wiki/Glicko_rating_system), and updated based on voting on the head-to-head page (described below).
+
+The application database should not include users or login. Users can vote without logging in, and all voting is anonymous.
+
+The application should have four pages
+1. A landing page
+	a. This page should be simple and clean, and link users to the three other pages.
+2. A head-to-head voting page
+	a. This page should present users with two cards chosen at random from the application's database and ask them to vote for which should be included in the cube.
+	b. Cards should be presented visually using images from scryfall.com's API.
+		i. If the card has two faces, there should be a "flip" button that shows the user the opposite face.
+		ii. The card should be displayed with an appropriate orientation according to the scryfall.com API data.
+	c. If a card has two faces, There should be a "flip" button that shows the user the opposite face. scryfall.com's API will indicate if a card has multiple faces and give separate images for each face.
+	c. When the user votes, the matchmaking values for each card should be updated accordingly, and the user should be shown a new pair of randomly selected cards.
+	d. The user should not be able to see matchmaking values on this page.
+3. A card suggestion page
+	a. This page should provide the user a search box which accepts either a card name or a scryfall.com link to a card page.
+	b. The user should be shown an image of the card to confirm it is the one they wish to add.
+		i. If the card has two faces, both should be displayed side by side with the front face on the left
+		ii. The card should be displayed with an appropriate orientation according to the scryfall.com API data.
+	c. When the user submits a card, it should be added to the database with its full name and default matchmaking values.
+		i. If the card already exists in the database, it's matchmaking values should not change.
+4. A standings page
+	a. This page should show a table of all of the cards in the application database sorted by their current matchmaking value.
+		i. Sort first by matchmaking rating descending, then by volatility ascending.
+	b. The table should include columns for the card name and matchmaking values.
+	c. The user should be able to resort the table by clicking on the header of each column.
+	d. If the user hovers their mouse over a row in the table, the card image (both faces side by side as appropriate) should be shown in a tooltip style box.
+		i. The tooltip box should not obscure the text in the hovered row.
+		ii. The tooltip box should appear immediately below the hovered row unless it would go off the bottom of the screen, in which case it should appear immediately above the row.
+		iii. If the card has two faces, both should be displayed side by side with the front face on the left
+		iv. The card should be displayed with an appropriate orientation according to the scryfall.com API data.
+
+There should also be a python script to bulk add cards from a txt file to the database with default matchmaking values. Any cards already in the database should not be modified by the script.
+
+
+Q&A
+* Q: What should be the initial Glicko-2 values for new cards?
+  A: Initial rating of 1500, initial rating deviation (RD) of 350, and initial volatility of 0.06.
+
+* Q: Should the random card selection for head-to-head be truly random?
+  A: Increase the likelihood of high uncertainty cards, but still allow for any card to be selected.
+
+* Q: What orientations should be handled for card display?
+  A: 90 degree rotation for cards like battles (e.g. Invasion of Alara), 180 degree rotation for flip cards (e.g. Akki Lavarunner // Tok-Tok, Volcano Born), and front/back flips for double face cards (e.g. Bloodline Keeper).
+
+* Q: What format should the bulk import txt file use?
+  A: One per line, card names or Scryfall URLs.
+
+* Q: What database should be used?
+  A: PostgreSQL for Heroku compatibility.
+
+Before beginning, consider if there are any ambiguities or unclear elements of these instructions. Ask clarifying questions to get the information you need to proceed. Edit the Q&A section above to include the questions and answers.
+

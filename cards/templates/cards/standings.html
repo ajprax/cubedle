@@ -1,0 +1,172 @@
+{% extends 'cards/base.html' %}
+{% load card_extras %}
+
+{% block title %}Standings{% endblock %}
+
+{% block content %}
+<div>
+    <h1 style="text-align: center;">Card Standings</h1>
+    <p style="text-align: center;">Click column headers to sort. Hover over rows to see card images.</p>
+    
+    {% if cards %}
+        <table id="standings-table">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">Rank</th>
+                    <th onclick="sortTable(1)">Card Name</th>
+                    <th onclick="sortTable(2)">Rating</th>
+                    <th onclick="sortTable(3)">Rating Deviation</th>
+                    <th onclick="sortTable(4)">Volatility</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for card in cards %}
+                <tr class="card-row" data-card-id="{{ card.id }}" 
+                    data-card-name="{{ card.name|escapejs }}"
+                    data-image-uri="{{ card|get_image_uri:0|escapejs }}"
+                    data-image-uri-back="{% card_back_image card %}"
+                    data-has-multiple-faces="{{ card.has_multiple_faces|yesno:'true,false' }}"
+                    data-rotation-angle="{{ card.get_rotation_angle }}">
+                    <td>{{ forloop.counter }}</td>
+                    <td>{{ card.name }}</td>
+                    <td>{{ card.rating|floatformat:1 }}</td>
+                    <td>{{ card.rating_deviation|floatformat:1 }}</td>
+                    <td>{{ card.volatility|floatformat:4 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div id="card-tooltip" class="tooltip-content" style="position: absolute; display: none; z-index: 1000;">
+            <!-- Card image tooltip will be inserted here -->
+        </div>
+    {% else %}
+        <div style="text-align: center; margin-top: 50px;">
+            <p>No cards in the database yet.</p>
+            <a href="{% url 'cards:suggest' %}" class="btn">Add some cards</a>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+let currentSortColumn = 2; // Default sort by rating
+let currentSortDirection = -1; // -1 for descending, 1 for ascending
+
+function sortTable(columnIndex) {
+    const table = document.getElementById('standings-table');
+    const tbody = table.getElementsByTagName('tbody')[0];
+    const rows = Array.from(tbody.rows);
+    
+    // Toggle sort direction if clicking the same column
+    if (currentSortColumn === columnIndex) {
+        currentSortDirection *= -1;
+    } else {
+        currentSortColumn = columnIndex;
+        currentSortDirection = columnIndex === 0 ? 1 : -1; // Rank ascending by default, others descending
+    }
+    
+    rows.sort((rowA, rowB) => {
+        let valueA = rowA.cells[columnIndex].textContent.trim();
+        let valueB = rowB.cells[columnIndex].textContent.trim();
+        
+        // Convert to numbers if possible
+        const numA = parseFloat(valueA);
+        const numB = parseFloat(valueB);
+        
+        if (!isNaN(numA) && !isNaN(numB)) {
+            return (numA - numB) * currentSortDirection;
+        } else {
+            return valueA.localeCompare(valueB) * currentSortDirection;
+        }
+    });
+    
+    // Re-append rows in sorted order and update rank
+    rows.forEach((row, index) => {
+        tbody.appendChild(row);
+        row.cells[0].textContent = index + 1; // Update rank
+    });
+    
+    // Update header to show sort direction
+    updateSortHeaders();
+}
+
+function updateSortHeaders() {
+    const headers = document.querySelectorAll('th');
+    headers.forEach((header, index) => {
+        header.style.backgroundColor = index === currentSortColumn ? '#d4edda' : '#f2f2f2';
+        const text = header.textContent.replace(/[↑↓]/g, '').trim();
+        if (index === currentSortColumn) {
+            header.textContent = text + (currentSortDirection === 1 ? ' ↑' : ' ↓');
+        } else {
+            header.textContent = text;
+        }
+    });
+}
+
+// Initialize sort headers
+updateSortHeaders();
+
+// Card tooltip functionality
+const tooltip = document.getElementById('card-tooltip');
+const cardRows = document.querySelectorAll('.card-row');
+
+cardRows.forEach(row => {
+    row.addEventListener('mouseenter', function(e) {
+        const cardName = this.dataset.cardName;
+        const imageUri = this.dataset.imageUri;
+        const imageUriBack = this.dataset.imageUriBack;
+        const hasMultipleFaces = this.dataset.hasMultipleFaces === 'true';
+        const rotationAngle = parseInt(this.dataset.rotationAngle) || 0;
+        
+        let tooltipHtml = '';
+        
+        if (hasMultipleFaces && imageUriBack) {
+            // Double-faced card - show both faces
+            tooltipHtml = `
+                <div style="display: flex; gap: 10px;">
+                    <img src="${imageUri}" alt="${cardName}" 
+                         style="max-width: 150px; max-height: 210px; transform: rotate(${rotationAngle}deg);">
+                    <img src="${imageUriBack}" alt="${cardName} (back)" 
+                         style="max-width: 150px; max-height: 210px; transform: rotate(${rotationAngle}deg);">
+                </div>
+            `;
+        } else {
+            // Single-faced card
+            tooltipHtml = `
+                <img src="${imageUri}" alt="${cardName}" 
+                     style="max-width: 200px; max-height: 280px; transform: rotate(${rotationAngle}deg);">
+            `;
+        }
+        
+        tooltip.innerHTML = tooltipHtml;
+        tooltip.style.display = 'block';
+        positionTooltip(e, this);
+    });
+    
+    row.addEventListener('mouseleave', function() {
+        tooltip.style.display = 'none';
+    });
+    
+    row.addEventListener('mousemove', function(e) {
+        positionTooltip(e, this);
+    });
+});
+
+function positionTooltip(event, row) {
+    const rect = row.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const windowHeight = window.innerHeight;
+    
+    // Position tooltip below the row by default
+    let top = rect.bottom + 10;
+    
+    // If tooltip would go off screen, position it above the row
+    if (top + tooltipRect.height > windowHeight) {
+        top = rect.top - tooltipRect.height - 10;
+    }
+    
+    tooltip.style.left = event.pageX + 'px';
+    tooltip.style.top = (top + window.pageYOffset) + 'px';
+}
+</script>
+{% endblock %}

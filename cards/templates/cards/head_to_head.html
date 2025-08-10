@@ -1,0 +1,162 @@
+{% extends 'cards/base.html' %}
+{% load card_extras %}
+
+{% block title %}Head-to-Head Voting{% endblock %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h1>Head-to-Head Voting</h1>
+    <p>Click on the card you think should be included in the cube</p>
+    
+    {% if error %}
+        <div class="error">{{ error }}</div>
+        <p><a href="{% url 'cards:suggest' %}" class="btn">Add some cards first</a></p>
+    {% else %}
+        <div class="voting-container" id="voting-container">
+            <div class="card-container" onclick="vote({{ card1.id }}, {{ card2.id }})">
+                <h3>{{ card1.name }}</h3>
+                <div style="position: relative;">
+                    <img src="{{ card1.get_image_uri }}" alt="{{ card1.name }}" 
+                         class="card-image" id="card1-img"
+                         style="transform: rotate({{ card1.get_rotation_angle }}deg);">
+                    {% if card1.has_multiple_faces %}
+                        <button class="flip-btn" onclick="event.stopPropagation(); flipCard(1)">Flip</button>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="vs">VS</div>
+            
+            <div class="card-container" onclick="vote({{ card2.id }}, {{ card1.id }})">
+                <h3>{{ card2.name }}</h3>
+                <div style="position: relative;">
+                    <img src="{{ card2.get_image_uri }}" alt="{{ card2.name }}" 
+                         class="card-image" id="card2-img"
+                         style="transform: rotate({{ card2.get_rotation_angle }}deg);">
+                    {% if card2.has_multiple_faces %}
+                        <button class="flip-btn" onclick="event.stopPropagation(); flipCard(2)">Flip</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="loading" id="loading">
+            <p>Processing vote and loading next pair...</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+let card1Data = {
+    id: {{ card1.id|default:0 }},
+    name: "{{ card1.name|escapejs }}",
+    image_uri: "{{ card1|get_image_uri:0|escapejs }}",
+    image_uri_back: "{% card_back_image card1 %}",
+    has_multiple_faces: {{ card1.has_multiple_faces|yesno:"true,false" }},
+    rotation_angle: {{ card1.get_rotation_angle|default:0 }},
+    current_face: 0
+};
+
+let card2Data = {
+    id: {{ card2.id|default:0 }},
+    name: "{{ card2.name|escapejs }}",
+    image_uri: "{{ card2|get_image_uri:0|escapejs }}",
+    image_uri_back: "{% card_back_image card2 %}",
+    has_multiple_faces: {{ card2.has_multiple_faces|yesno:"true,false" }},
+    rotation_angle: {{ card2.get_rotation_angle|default:0 }},
+    current_face: 0
+};
+
+function flipCard(cardNumber) {
+    const cardData = cardNumber === 1 ? card1Data : card2Data;
+    const imgElement = document.getElementById(`card${cardNumber}-img`);
+    
+    if (!cardData.has_multiple_faces) return;
+    
+    cardData.current_face = cardData.current_face === 0 ? 1 : 0;
+    const newImageUri = cardData.current_face === 0 ? cardData.image_uri : cardData.image_uri_back;
+    
+    imgElement.src = newImageUri;
+}
+
+function vote(winnerId, loserId) {
+    const loadingDiv = document.getElementById('loading');
+    const votingContainer = document.getElementById('voting-container');
+    
+    loadingDiv.style.display = 'block';
+    votingContainer.style.opacity = '0.5';
+    
+    makeRequest('{% url "cards:vote" %}', {
+        winner_id: winnerId,
+        loser_id: loserId
+    }, function(response) {
+        if (response.error) {
+            alert('Error: ' + response.error);
+            loadingDiv.style.display = 'none';
+            votingContainer.style.opacity = '1';
+            return;
+        }
+        
+        // Update the display with new cards
+        updateCards(response.card1, response.card2);
+        
+        loadingDiv.style.display = 'none';
+        votingContainer.style.opacity = '1';
+    }, function(error) {
+        alert('Error processing vote: ' + error);
+        loadingDiv.style.display = 'none';
+        votingContainer.style.opacity = '1';
+    });
+}
+
+function updateCards(newCard1, newCard2) {
+    // Update card1
+    card1Data = {
+        id: newCard1.id,
+        name: newCard1.name,
+        image_uri: newCard1.image_uri,
+        image_uri_back: newCard1.image_uri_back,
+        has_multiple_faces: newCard1.has_multiple_faces,
+        rotation_angle: newCard1.rotation_angle,
+        current_face: 0
+    };
+    
+    // Update card2
+    card2Data = {
+        id: newCard2.id,
+        name: newCard2.name,
+        image_uri: newCard2.image_uri,
+        image_uri_back: newCard2.image_uri_back,
+        has_multiple_faces: newCard2.has_multiple_faces,
+        rotation_angle: newCard2.rotation_angle,
+        current_face: 0
+    };
+    
+    // Update DOM
+    const votingContainer = document.getElementById('voting-container');
+    votingContainer.innerHTML = `
+        <div class="card-container" onclick="vote(${card1Data.id}, ${card2Data.id})">
+            <h3>${card1Data.name}</h3>
+            <div style="position: relative;">
+                <img src="${card1Data.image_uri}" alt="${card1Data.name}" 
+                     class="card-image" id="card1-img"
+                     style="transform: rotate(${card1Data.rotation_angle}deg);">
+                ${card1Data.has_multiple_faces ? '<button class="flip-btn" onclick="event.stopPropagation(); flipCard(1)">Flip</button>' : ''}
+            </div>
+        </div>
+        
+        <div class="vs">VS</div>
+        
+        <div class="card-container" onclick="vote(${card2Data.id}, ${card1Data.id})">
+            <h3>${card2Data.name}</h3>
+            <div style="position: relative;">
+                <img src="${card2Data.image_uri}" alt="${card2Data.name}" 
+                     class="card-image" id="card2-img"
+                     style="transform: rotate(${card2Data.rotation_angle}deg);">
+                ${card2Data.has_multiple_faces ? '<button class="flip-btn" onclick="event.stopPropagation(); flipCard(2)">Flip</button>' : ''}
+            </div>
+        </div>
+    `;
+}
+</script>
+{% endblock %}

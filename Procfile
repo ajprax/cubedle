@@ -1,0 +1,1 @@
+web: gunicorn cube_voting.wsgi --log-file -

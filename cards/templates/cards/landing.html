@@ -1,0 +1,47 @@
+{% extends 'cards/base.html' %}
+
+{% block title %}Cube Voting - Home{% endblock %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h1>Welcome to Cube Voting</h1>
+    <p style="font-size: 1.2em; margin: 30px 0;">
+        Help decide which Magic: The Gathering cards should be included in the cube!
+    </p>
+    
+    <div style="background-color: #ecf0f1; padding: 20px; border-radius: 10px; margin: 30px 0;">
+        <h3>Current Stats</h3>
+        <p><strong>{{ total_cards }}</strong> cards in the database</p>
+    </div>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-top: 40px;">
+        <div style="background-color: #3498db; color: white; padding: 30px; border-radius: 10px;">
+            <h3>Head-to-Head Voting</h3>
+            <p>Vote on which cards should be included by comparing them head-to-head.</p>
+            <a href="{% url 'cards:head_to_head' %}" class="btn" style="background-color: white; color: #3498db;">Start Voting</a>
+        </div>
+        
+        <div style="background-color: #27ae60; color: white; padding: 30px; border-radius: 10px;">
+            <h3>Suggest Cards</h3>
+            <p>Search for and add new cards to the voting pool.</p>
+            <a href="{% url 'cards:suggest' %}" class="btn" style="background-color: white; color: #27ae60;">Suggest Cards</a>
+        </div>
+        
+        <div style="background-color: #e74c3c; color: white; padding: 30px; border-radius: 10px;">
+            <h3>View Standings</h3>
+            <p>See which cards are currently ranking highest based on votes.</p>
+            <a href="{% url 'cards:standings' %}" class="btn" style="background-color: white; color: #e74c3c;">View Standings</a>
+        </div>
+    </div>
+    
+    <div style="margin-top: 40px; padding: 20px; background-color: #f8f9fa; border-left: 4px solid #3498db;">
+        <h4>How it works:</h4>
+        <ol style="text-align: left; display: inline-block;">
+            <li>Cards are rated using the Glicko-2 system based on head-to-head votes</li>
+            <li>Higher-rated cards are more likely to be included in the final cube</li>
+            <li>New cards start with neutral ratings and move up or down based on votes</li>
+            <li>Cards with higher uncertainty are more likely to appear in voting pairs</li>
+        </ol>
+    </div>
+</div>
+{% endblock %}

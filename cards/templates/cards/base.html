@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Cube Voting{% endblock %}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background-color: #2c3e50;
+            border-radius: 10px;
+        }
+        .nav a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+        .nav a:hover {
+            background-color: #34495e;
+        }
+        .nav a.active {
+            background-color: #3498db;
+        }
+        .card-image {
+            max-width: 250px;
+            max-height: 350px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .card-image:hover {
+            transform: scale(1.05);
+        }
+        .voting-container {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            margin: 30px 0;
+            align-items: center;
+        }
+        .card-container {
+            text-align: center;
+            position: relative;
+        }
+        .card-container h3 {
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+        .flip-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .vs {
+            font-size: 2em;
+            font-weight: bold;
+            color: #e74c3c;
+            margin: 0 20px;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn.success {
+            background-color: #27ae60;
+            color: white;
+        }
+        .btn.success:hover {
+            background-color: #229954;
+            color: white;
+        }
+        .error {
+            color: #e74c3c;
+            background-color: #fadbd8;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            color: #27ae60;
+            background-color: #d5f4e6;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            cursor: pointer;
+            user-select: none;
+        }
+        th:hover {
+            background-color: #e8e8e8;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip-content {
+            visibility: hidden;
+            position: absolute;
+            z-index: 1;
+            background-color: rgba(0,0,0,0.9);
+            border-radius: 10px;
+            padding: 10px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltip-content {
+            visibility: visible;
+            opacity: 1;
+        }
+        .search-container {
+            margin: 20px 0;
+        }
+        .search-input {
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            width: 300px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <nav class="nav">
+            <a href="{% url 'cards:landing' %}" {% if request.resolver_match.url_name == 'landing' %}class="active"{% endif %}>Home</a>
+            <a href="{% url 'cards:head_to_head' %}" {% if request.resolver_match.url_name == 'head_to_head' %}class="active"{% endif %}>Head-to-Head</a>
+            <a href="{% url 'cards:suggest' %}" {% if request.resolver_match.url_name == 'suggest' %}class="active"{% endif %}>Suggest Cards</a>
+            <a href="{% url 'cards:standings' %}" {% if request.resolver_match.url_name == 'standings' %}class="active"{% endif %}>Standings</a>
+        </nav>
+        
+        {% block content %}
+        {% endblock %}
+    </div>
+    
+    <script>
+        // Utility function for AJAX requests
+        function makeRequest(url, data, onSuccess, onError) {
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(onSuccess)
+            .catch(onError);
+        }
+        
+        // Function to rotate card image based on layout
+        function applyCardRotation(imgElement, rotationAngle) {
+            if (rotationAngle > 0) {
+                imgElement.style.transform = `rotate(${rotationAngle}deg)`;
+            }
+        }
+    </script>
+    
+    {% block extra_js %}
+    {% endblock %}
+</body>
+</html>

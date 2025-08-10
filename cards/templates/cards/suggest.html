@@ -1,0 +1,270 @@
+{% extends 'cards/base.html' %}
+
+{% block title %}Suggest Cards{% endblock %}
+
+{% block content %}
+<div style="text-align: center;">
+    <h1>Suggest Cards</h1>
+    <p>Search for cards by name or paste a Scryfall URL to add them to the voting pool</p>
+    
+    <div class="search-container">
+        <input type="text" id="search-input" class="search-input" 
+               placeholder="Enter card name or Scryfall URL..." 
+               onkeypress="handleEnter(event)">
+        <button class="btn" onclick="searchCard()">Search</button>
+    </div>
+    
+    <div class="loading" id="loading">
+        <p>Searching for card...</p>
+    </div>
+    
+    <div id="error-message" class="error" style="display: none;"></div>
+    <div id="success-message" class="success" style="display: none;"></div>
+    
+    <div id="card-preview" style="display: none; margin-top: 30px;">
+        <h3>Card Preview</h3>
+        <div id="card-display" style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+            <!-- Card images will be inserted here -->
+        </div>
+        <div style="margin-top: 20px;">
+            <h4 id="card-name"></h4>
+            <button class="btn success" onclick="addCard()">Add to Database</button>
+            <button class="btn" onclick="cancelAdd()">Cancel</button>
+        </div>
+    </div>
+    
+    <hr style="margin: 50px 0; border: 1px solid #ddd;">
+    
+    <div style="text-align: center;">
+        <h2>Bulk Add Cards</h2>
+        <p>Enter multiple card names or Scryfall URLs, one per line</p>
+        
+        <div style="margin: 20px 0;">
+            <textarea id="bulk-input" 
+                      style="width: 80%; max-width: 600px; height: 200px; padding: 15px; border: 2px solid #ddd; border-radius: 5px; font-family: monospace; font-size: 14px;" 
+                      placeholder="Lightning Bolt
+https://scryfall.com/card/unf/178/space-beleren
+Black Lotus
+Ancestral Recall"></textarea>
+        </div>
+        
+        <div style="margin: 20px 0;">
+            <button class="btn success" onclick="bulkAddCards()">Add All Cards</button>
+            <button class="btn" onclick="clearBulkInput()">Clear</button>
+        </div>
+        
+        <div class="loading" id="bulk-loading" style="display: none;">
+            <p>Processing cards... This may take a moment.</p>
+        </div>
+        
+        <div id="bulk-results" style="display: none; margin-top: 20px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
+            <!-- Results will be displayed here -->
+        </div>
+    </div>
+</div>
+
+<script>
+let currentCardData = null;
+
+function handleEnter(event) {
+    if (event.key === 'Enter') {
+        searchCard();
+    }
+}
+
+function searchCard() {
+    const query = document.getElementById('search-input').value.trim();
+    if (!query) {
+        showError('Please enter a card name or URL');
+        return;
+    }
+    
+    hideMessages();
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('card-preview').style.display = 'none';
+    
+    makeRequest('{% url "cards:search_card" %}', {
+        query: query
+    }, function(response) {
+        document.getElementById('loading').style.display = 'none';
+        
+        if (response.error) {
+            showError(response.error);
+            return;
+        }
+        
+        currentCardData = response.card;
+        displayCardPreview(currentCardData);
+    }, function(error) {
+        document.getElementById('loading').style.display = 'none';
+        showError('Error searching for card: ' + error);
+    });
+}
+
+function displayCardPreview(cardData) {
+    const cardDisplay = document.getElementById('card-display');
+    const cardName = document.getElementById('card-name');
+    const cardPreview = document.getElementById('card-preview');
+    
+    cardName.textContent = cardData.name;
+    
+    let imagesHtml = '';
+    
+    if (cardData.card_faces && cardData.card_faces.length > 1) {
+        // Double-faced card - show both faces side by side
+        cardData.card_faces.forEach((face, index) => {
+            const imageUri = face.image_uris ? face.image_uris.normal : '';
+            if (imageUri) {
+                const rotation = getRotationForLayout(cardData.layout);
+                imagesHtml += `
+                    <div>
+                        <p><strong>${face.name}</strong></p>
+                        <img src="${imageUri}" alt="${face.name}" 
+                             class="card-image" style="transform: rotate(${rotation}deg);">
+                    </div>
+                `;
+            }
+        });
+    } else {
+        // Single-faced card
+        const imageUri = cardData.image_uris ? cardData.image_uris.normal : '';
+        if (imageUri) {
+            const rotation = getRotationForLayout(cardData.layout);
+            imagesHtml = `
+                <div>
+                    <img src="${imageUri}" alt="${cardData.name}" 
+                         class="card-image" style="transform: rotate(${rotation}deg);">
+                </div>
+            `;
+        }
+    }
+    
+    cardDisplay.innerHTML = imagesHtml;
+    cardPreview.style.display = 'block';
+}
+
+function getRotationForLayout(layout) {
+    if (layout === 'battle') return 90;
+    if (layout === 'flip') return 180;
+    return 0;
+}
+
+function addCard() {
+    if (!currentCardData) return;
+    
+    document.getElementById('loading').style.display = 'block';
+    
+    makeRequest('{% url "cards:add_card" %}', {
+        card_data: currentCardData
+    }, function(response) {
+        document.getElementById('loading').style.display = 'none';
+        
+        if (response.error) {
+            showError(response.error);
+            return;
+        }
+        
+        if (response.existed) {
+            showSuccess('Card already exists in the database');
+        } else {
+            showSuccess('Card added successfully!');
+        }
+        
+        // Clear the form
+        document.getElementById('search-input').value = '';
+        document.getElementById('card-preview').style.display = 'none';
+        currentCardData = null;
+    }, function(error) {
+        document.getElementById('loading').style.display = 'none';
+        showError('Error adding card: ' + error);
+    });
+}
+
+function cancelAdd() {
+    document.getElementById('card-preview').style.display = 'none';
+    currentCardData = null;
+}
+
+function showError(message) {
+    const errorDiv = document.getElementById('error-message');
+    errorDiv.textContent = message;
+    errorDiv.style.display = 'block';
+}
+
+function showSuccess(message) {
+    const successDiv = document.getElementById('success-message');
+    successDiv.textContent = message;
+    successDiv.style.display = 'block';
+}
+
+function hideMessages() {
+    document.getElementById('error-message').style.display = 'none';
+    document.getElementById('success-message').style.display = 'none';
+}
+
+function bulkAddCards() {
+    const bulkInput = document.getElementById('bulk-input').value.trim();
+    
+    if (!bulkInput) {
+        showError('Please enter some card names or URLs');
+        return;
+    }
+    
+    hideMessages();
+    document.getElementById('bulk-loading').style.display = 'block';
+    document.getElementById('bulk-results').style.display = 'none';
+    
+    makeRequest('{% url "cards:bulk_add_cards" %}', {
+        card_list: bulkInput
+    }, function(response) {
+        document.getElementById('bulk-loading').style.display = 'none';
+        
+        if (response.error) {
+            showError(response.error);
+            return;
+        }
+        
+        displayBulkResults(response);
+    }, function(error) {
+        document.getElementById('bulk-loading').style.display = 'none';
+        showError('Error processing cards: ' + error);
+    });
+}
+
+function displayBulkResults(results) {
+    const resultsDiv = document.getElementById('bulk-results');
+    
+    let html = '<div style="background-color: #f8f9fa; padding: 20px; border-radius: 10px;">';
+    html += '<h3>Bulk Add Results</h3>';
+    html += `<p><strong>Total processed:</strong> ${results.total}</p>`;
+    html += `<p><strong style="color: #27ae60;">Successfully added:</strong> ${results.added}</p>`;
+    html += `<p><strong style="color: #f39c12;">Already existed:</strong> ${results.existed}</p>`;
+    html += `<p><strong style="color: #e74c3c;">Errors:</strong> ${results.errors}</p>`;
+    
+    if (results.error_details && results.error_details.length > 0) {
+        html += '<h4>Error Details:</h4>';
+        html += '<div style="max-height: 200px; overflow-y: auto; background: white; padding: 10px; border-radius: 5px; border: 1px solid #ddd;">';
+        results.error_details.forEach(error => {
+            html += `<div style="margin-bottom: 5px; font-family: monospace; font-size: 12px;">${error}</div>`;
+        });
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    
+    resultsDiv.innerHTML = html;
+    resultsDiv.style.display = 'block';
+    
+    // Clear the input if successful
+    if (results.added > 0 || results.existed > 0) {
+        document.getElementById('bulk-input').value = '';
+    }
+}
+
+function clearBulkInput() {
+    document.getElementById('bulk-input').value = '';
+    document.getElementById('bulk-results').style.display = 'none';
+    hideMessages();
+}
+</script>
+{% endblock %}
