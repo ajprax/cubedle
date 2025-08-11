@@ -13,3 +13,8 @@ def card_back_image(card):
     if card.has_multiple_faces():
         return card.get_image_uri(1)
     return ""
+
+@register.filter
+def has_flippable_faces(card):
+    """Check if card has flippable faces"""
+    return card.has_flippable_faces()

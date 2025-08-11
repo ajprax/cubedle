@@ -64,6 +64,7 @@ def vote(request):
                     'image_uri': card1.get_image_uri(0),
                     'image_uri_back': card1.get_image_uri(1) if card1.has_multiple_faces() else None,
                     'has_multiple_faces': card1.has_multiple_faces(),
+                    'has_flippable_faces': card1.has_flippable_faces(),
                     'rotation_angle': card1.get_rotation_angle()
                 },
                 'card2': {
@@ -72,6 +73,7 @@ def vote(request):
                     'image_uri': card2.get_image_uri(0),
                     'image_uri_back': card2.get_image_uri(1) if card2.has_multiple_faces() else None,
                     'has_multiple_faces': card2.has_multiple_faces(),
+                    'has_flippable_faces': card2.has_flippable_faces(),
                     'rotation_angle': card2.get_rotation_angle()
                 }
             }

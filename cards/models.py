@@ -49,6 +49,20 @@ class Card(models.Model):
         """Check if card has multiple faces (transform, modal_dfc, etc.)"""
         return len(self.card_faces) > 1
     
+    def has_flippable_faces(self):
+        """Check if card has faces that can be flipped between (not split/adventure cards)"""
+        if len(self.card_faces) <= 1:
+            return False
+        
+        # Only these layouts have truly flippable faces where you see one side at a time
+        flippable_layouts = [
+            'transform',        # Double-faced transforming cards
+            'modal_dfc',        # Modal double-faced cards
+            'reversible_card',  # Reversible cards
+        ]
+        
+        return self.layout in flippable_layouts
+    
     def needs_rotation(self):
         """Determine if card needs rotation based on layout"""
         rotation_layouts = ['battle', 'flip']
