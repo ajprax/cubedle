@@ -1,0 +1,227 @@
+{% extends 'cards/base.html' %}
+
+{% block title %}Diagnostics - Card Management{% endblock %}
+
+{% block content %}
+<div>
+    <h1 style="text-align: center; color: #e74c3c;">🔧 Diagnostics - Card Management</h1>
+    <p style="text-align: center; color: #7f8c8d; font-style: italic;">
+        Hidden admin page for debugging and card management
+    </p>
+    
+    <div style="background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 10px; margin: 20px 0;">
+        <strong>⚠️ Warning:</strong> This page allows direct database manipulation. Use with caution!
+    </div>
+    
+    <div style="text-align: center; margin: 30px 0;">
+        <form method="GET" style="display: inline-block;">
+            <input type="text" name="search" value="{{ search_query }}" 
+                   placeholder="Search cards by name..." 
+                   style="padding: 10px; border: 2px solid #ddd; border-radius: 5px; width: 300px; font-size: 16px;">
+            <button type="submit" class="btn" style="margin-left: 10px;">Search</button>
+        </form>
+    </div>
+    
+    <div id="message-area" style="margin: 20px 0;"></div>
+    
+    {% if cards %}
+        <div style="margin-top: 30px;">
+            <h3>Search Results ({{ cards|length }} card{{ cards|length|pluralize }})</h3>
+            
+            {% for card in cards %}
+            <div class="card-edit-section" style="border: 1px solid #ddd; border-radius: 10px; padding: 20px; margin: 20px 0; background-color: #f8f9fa;">
+                <div style="display: flex; align-items: flex-start; gap: 20px;">
+                    <!-- Card Image -->
+                    <div style="flex-shrink: 0;">
+                        <img src="{{ card.get_image_uri }}" alt="{{ card.name }}" 
+                             style="max-width: 150px; max-height: 210px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                    </div>
+                    
+                    <!-- Card Details and Edit Form -->
+                    <div style="flex-grow: 1;">
+                        <h4 style="margin-top: 0; color: #2c3e50;">{{ card.name }}</h4>
+                        <p style="color: #7f8c8d; font-size: 14px;">
+                            <strong>ID:</strong> {{ card.id }} | 
+                            <strong>Scryfall ID:</strong> {{ card.scryfall_id }}<br>
+                            <strong>Created:</strong> {{ card.created_at|date:"M d, Y H:i" }}
+                        </p>
+                        
+                        <div class="field-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 15px 0;">
+                            <div>
+                                <label><strong>Name:</strong></label>
+                                <input type="text" class="field-input" data-card-id="{{ card.id }}" data-field="name" 
+                                       value="{{ card.name }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            
+                            <div>
+                                <label><strong>Rating:</strong></label>
+                                <input type="number" step="0.1" class="field-input" data-card-id="{{ card.id }}" data-field="rating" 
+                                       value="{{ card.rating }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            
+                            <div>
+                                <label><strong>Rating Deviation:</strong></label>
+                                <input type="number" step="0.1" class="field-input" data-card-id="{{ card.id }}" data-field="rating_deviation" 
+                                       value="{{ card.rating_deviation }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            
+                            <div>
+                                <label><strong>Volatility:</strong></label>
+                                <input type="number" step="0.001" class="field-input" data-card-id="{{ card.id }}" data-field="volatility" 
+                                       value="{{ card.volatility }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            
+                            <div>
+                                <label><strong>Layout:</strong></label>
+                                <input type="text" class="field-input" data-card-id="{{ card.id }}" data-field="layout" 
+                                       value="{{ card.layout }}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 15px; display: flex; gap: 10px;">
+                            <button class="btn" onclick="updateCard({{ card.id }})">Save Changes</button>
+                            <button class="btn" onclick="resetCard({{ card.id }})" style="background-color: #f39c12;">Reset</button>
+                            <button class="btn" onclick="deleteCard({{ card.id }}, '{{ card.name|escapejs }}')" 
+                                    style="background-color: #e74c3c;">Delete Card</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% elif search_query %}
+        <div style="text-align: center; margin-top: 50px; color: #7f8c8d;">
+            <p>No cards found matching "{{ search_query }}"</p>
+        </div>
+    {% else %}
+        <div style="text-align: center; margin-top: 50px; color: #7f8c8d;">
+            <p>Enter a search term above to find cards in the database.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+const originalValues = new Map();
+
+// Store original values when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.field-input').forEach(input => {
+        const cardId = input.dataset.cardId;
+        const field = input.dataset.field;
+        const key = `${cardId}-${field}`;
+        originalValues.set(key, input.value);
+    });
+});
+
+function updateCard(cardId) {
+    const inputs = document.querySelectorAll(`[data-card-id="${cardId}"]`);
+    const updates = {};
+    
+    inputs.forEach(input => {
+        const field = input.dataset.field;
+        const value = input.value;
+        updates[field] = value;
+    });
+    
+    showMessage('Updating card...', 'info');
+    
+    // Send each field update separately
+    const updatePromises = Object.entries(updates).map(([field, value]) => {
+        return fetch('{% url "cards:update_card" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                card_id: cardId,
+                field: field,
+                value: value
+            })
+        }).then(response => response.json());
+    });
+    
+    Promise.all(updatePromises)
+        .then(results => {
+            const errors = results.filter(r => r.error);
+            if (errors.length > 0) {
+                showMessage(`Errors: ${errors.map(e => e.error).join(', ')}`, 'error');
+            } else {
+                showMessage('Card updated successfully!', 'success');
+                // Update stored original values
+                inputs.forEach(input => {
+                    const field = input.dataset.field;
+                    const key = `${cardId}-${field}`;
+                    originalValues.set(key, input.value);
+                });
+            }
+        })
+        .catch(error => {
+            showMessage('Error updating card: ' + error, 'error');
+        });
+}
+
+function resetCard(cardId) {
+    const inputs = document.querySelectorAll(`[data-card-id="${cardId}"]`);
+    
+    inputs.forEach(input => {
+        const field = input.dataset.field;
+        const key = `${cardId}-${field}`;
+        const originalValue = originalValues.get(key);
+        if (originalValue !== undefined) {
+            input.value = originalValue;
+        }
+    });
+    
+    showMessage('Fields reset to original values', 'info');
+}
+
+function deleteCard(cardId, cardName) {
+    if (!confirm(`Are you sure you want to delete "${cardName}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    showMessage('Deleting card...', 'info');
+    
+    fetch('{% url "cards:delete_card" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            card_id: cardId
+        })
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.error) {
+            showMessage('Error: ' + result.error, 'error');
+        } else {
+            showMessage(result.message, 'success');
+            // Remove the card section from the page
+            document.querySelector(`[data-card-id="${cardId}"]`).closest('.card-edit-section').remove();
+        }
+    })
+    .catch(error => {
+        showMessage('Error deleting card: ' + error, 'error');
+    });
+}
+
+function showMessage(message, type) {
+    const messageArea = document.getElementById('message-area');
+    const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+    const bgColor = type === 'error' ? '#fadbd8' : type === 'success' ? '#d5f4e6' : '#d1ecf1';
+    const textColor = type === 'error' ? '#e74c3c' : type === 'success' ? '#27ae60' : '#0c5460';
+    
+    messageArea.innerHTML = `
+        <div style="background-color: ${bgColor}; color: ${textColor}; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            ${message}
+        </div>
+    `;
+    
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        messageArea.innerHTML = '';
+    }, 5000);
+}
+</script>
+{% endblock %}

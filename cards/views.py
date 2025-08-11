@@ -269,3 +269,75 @@ def standings(request):
         'cards': cards
     }
     return render(request, 'cards/standings.html', context)
+
+
+def diagnostics(request):
+    """Hidden diagnostics page for card management"""
+    context = {}
+    
+    search_query = request.GET.get('search', '')
+    if search_query:
+        cards = Card.objects.filter(name__icontains=search_query).order_by('name')
+        context['cards'] = cards
+        context['search_query'] = search_query
+    
+    return render(request, 'cards/diagnostics.html', context)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_card(request):
+    """Update card fields via diagnostics page"""
+    try:
+        data = json.loads(request.body)
+        card_id = data.get('card_id')
+        field = data.get('field')
+        value = data.get('value')
+        
+        if not card_id or not field:
+            return JsonResponse({'error': 'Card ID and field are required'}, status=400)
+        
+        card = get_object_or_404(Card, id=card_id)
+        
+        # Validate and convert field values
+        if field == 'name':
+            card.name = str(value)
+        elif field == 'rating':
+            card.rating = float(value)
+        elif field == 'rating_deviation':
+            card.rating_deviation = float(value)
+        elif field == 'volatility':
+            card.volatility = float(value)
+        elif field == 'layout':
+            card.layout = str(value)
+        else:
+            return JsonResponse({'error': 'Invalid field'}, status=400)
+        
+        card.save()
+        return JsonResponse({'success': True, 'message': f'Updated {field} successfully'})
+        
+    except ValueError as e:
+        return JsonResponse({'error': f'Invalid value: {str(e)}'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def delete_card(request):
+    """Delete card via diagnostics page"""
+    try:
+        data = json.loads(request.body)
+        card_id = data.get('card_id')
+        
+        if not card_id:
+            return JsonResponse({'error': 'Card ID is required'}, status=400)
+        
+        card = get_object_or_404(Card, id=card_id)
+        card_name = card.name
+        card.delete()
+        
+        return JsonResponse({'success': True, 'message': f'Deleted "{card_name}" successfully'})
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

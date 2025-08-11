@@ -12,4 +12,7 @@ urlpatterns = [
     path('add-card/', views.add_card, name='add_card'),
     path('bulk-add-cards/', views.bulk_add_cards, name='bulk_add_cards'),
     path('standings/', views.standings, name='standings'),
+    path('diagnostics/', views.diagnostics, name='diagnostics'),
+    path('update-card/', views.update_card, name='update_card'),
+    path('delete-card/', views.delete_card, name='delete_card'),
 ]
