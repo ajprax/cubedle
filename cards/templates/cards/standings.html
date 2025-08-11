@@ -9,7 +9,8 @@
     <p style="text-align: center;">Click column headers to sort. Hover over rows to see card images.</p>
     
     {% if cards %}
-        <table id="standings-table">
+        <div class="table-container">
+            <table id="standings-table">
             <thead>
                 <tr>
                     <th onclick="sortTable(0)">Rank</th>
@@ -35,7 +36,8 @@
                 </tr>
                 {% endfor %}
             </tbody>
-        </table>
+            </table>
+        </div>
         
         <div id="card-tooltip" class="tooltip-content" style="position: absolute; display: none; z-index: 1000;">
             <!-- Card image tooltip will be inserted here -->
