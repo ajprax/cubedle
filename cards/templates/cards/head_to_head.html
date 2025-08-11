@@ -104,6 +104,9 @@ function vote(winnerId, loserId) {
         
         loadingDiv.style.display = 'none';
         votingContainer.style.opacity = '1';
+        
+        // Scroll to show both cards on mobile
+        scrollToShowCards();
     }, function(error) {
         alert('Error processing vote: ' + error);
         loadingDiv.style.display = 'none';
@@ -160,6 +163,35 @@ function updateCards(newCard1, newCard2) {
         </div>
     `;
 }
+
+function scrollToShowCards() {
+    // Only scroll on mobile devices
+    if (window.innerWidth <= 768) {
+        // Small delay to ensure content is rendered
+        setTimeout(() => {
+            const votingContainer = document.getElementById('voting-container');
+            if (votingContainer) {
+                const containerRect = votingContainer.getBoundingClientRect();
+                const containerHeight = containerRect.height;
+                const viewportHeight = window.innerHeight;
+                
+                // Calculate scroll position to center the voting area
+                const scrollTo = votingContainer.offsetTop - (viewportHeight - containerHeight) / 2;
+                
+                // Smooth scroll to position
+                window.scrollTo({
+                    top: Math.max(0, scrollTo),
+                    behavior: 'smooth'
+                });
+            }
+        }, 100);
+    }
+}
+
+// Scroll to show cards when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    scrollToShowCards();
+});
 </script>
 {% endif %}
 {% endblock %}
