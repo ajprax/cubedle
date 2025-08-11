@@ -72,15 +72,23 @@
         }
         .flip-btn {
             position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0,0,0,0.7);
+            top: 8px;
+            right: 8px;
+            background: rgba(0,0,0,0.8);
             color: white;
             border: none;
-            border-radius: 5px;
-            padding: 5px 10px;
+            border-radius: 8px;
+            padding: 8px 12px;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 14px;
+            font-weight: bold;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            z-index: 10;
+            min-width: 50px;
+            transition: background-color 0.2s;
+        }
+        .flip-btn:hover {
+            background: rgba(0,0,0,0.9);
         }
         .vs {
             font-size: 2em;
@@ -215,6 +223,13 @@
                 font-size: 1.1em;
                 margin-bottom: 8px;
                 margin-top: 5px;
+            }
+            .flip-btn {
+                padding: 10px 15px;
+                font-size: 16px;
+                min-width: 60px;
+                top: 12px;
+                right: 12px;
             }
             .btn {
                 font-size: 14px;
