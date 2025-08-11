@@ -27,9 +27,23 @@ class Card(models.Model):
     
     def get_image_uri(self, face=0):
         """Get image URI for display, handling different card layouts"""
+        # For split cards, double-faced cards, etc. - check card_faces first
         if self.card_faces and len(self.card_faces) > face:
-            return self.card_faces[face].get('image_uris', {}).get('normal', '')
-        return self.image_uris.get('normal', '')
+            face_image = self.card_faces[face].get('image_uris', {}).get('normal', '')
+            if face_image:
+                return face_image
+        
+        # Fallback to main image_uris (for normal cards)
+        if self.image_uris and 'normal' in self.image_uris:
+            return self.image_uris.get('normal', '')
+        
+        # If no normal image, try other sizes as fallback
+        if self.image_uris:
+            for size in ['large', 'border_crop', 'art_crop', 'png', 'small']:
+                if size in self.image_uris:
+                    return self.image_uris[size]
+        
+        return ''
     
     def has_multiple_faces(self):
         """Check if card has multiple faces (transform, modal_dfc, etc.)"""
