@@ -10,7 +10,8 @@
     
     {% if error %}
         <div class="error">{{ error }}</div>
-        <p><a href="{% url 'cards:suggest' %}" class="btn">Add some cards first</a></p>
+        <p>You need at least 2 cards in the database to start head-to-head voting.</p>
+        <p><a href="{% url 'cards:suggest' %}" class="btn success">Suggest Cards</a></p>
     {% else %}
         <div class="voting-container" id="voting-container">
             <div class="card-container" onclick="vote({{ card1.id }}, {{ card2.id }})">
@@ -46,6 +47,7 @@
     {% endif %}
 </div>
 
+{% if not error %}
 <script>
 let card1Data = {
     id: {{ card1.id|default:0 }},
@@ -159,4 +161,5 @@ function updateCards(newCard1, newCard2) {
     `;
 }
 </script>
+{% endif %}
 {% endblock %}
