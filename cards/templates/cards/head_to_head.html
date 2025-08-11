@@ -171,24 +171,31 @@ function updateCards(newCard1, newCard2) {
 function scrollToShowCards() {
     // Only scroll on mobile devices
     if (window.innerWidth <= 768) {
-        // Small delay to ensure content is rendered
+        // Longer delay to ensure rotated cards are fully rendered
         setTimeout(() => {
             const votingContainer = document.getElementById('voting-container');
             if (votingContainer) {
+                // Force a layout recalculation to account for rotated cards
+                votingContainer.offsetHeight;
+                
                 const containerRect = votingContainer.getBoundingClientRect();
                 const containerHeight = containerRect.height;
                 const viewportHeight = window.innerHeight;
+                const headerHeight = 100; // Account for header space
                 
-                // Calculate scroll position to center the voting area
-                const scrollTo = votingContainer.offsetTop - (viewportHeight - containerHeight) / 2;
+                // Calculate scroll position with extra padding for rotated cards
+                const scrollTo = votingContainer.offsetTop - headerHeight;
+                
+                // Ensure both cards are visible by scrolling to show the full container
+                const maxScroll = Math.max(0, scrollTo);
                 
                 // Smooth scroll to position
                 window.scrollTo({
-                    top: Math.max(0, scrollTo),
+                    top: maxScroll,
                     behavior: 'smooth'
                 });
             }
-        }, 100);
+        }, 250); // Increased delay for rotated card rendering
     }
 }
 
