@@ -15,4 +15,5 @@ urlpatterns = [
     path('diagnostics/', views.diagnostics, name='diagnostics'),
     path('update-card/', views.update_card, name='update_card'),
     path('delete-card/', views.delete_card, name='delete_card'),
+    path('kernels/', views.kernels_app, name='kernels'),
 ]

@@ -343,3 +343,8 @@ def delete_card(request):
         
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
+
+def kernels_app(request):
+    """Serve the kernels React app"""
+    return render(request, 'cards/kernels.html')

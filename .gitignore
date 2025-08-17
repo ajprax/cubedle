@@ -29,7 +29,6 @@ db.sqlite3
 db.sqlite3-journal
 
 # Static files
-staticfiles/
 static/
 
 # Media files
@@ -125,3 +124,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+
+
+frontend/node_modules
+CLAUDE.md

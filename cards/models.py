@@ -19,8 +19,38 @@ class Card(models.Model):
     card_faces = models.JSONField(default=list)  # for double-faced cards
     layout = models.CharField(max_length=50, default='normal')
     
+    # Additional MTG card data for kernels functionality
+    mana_cost = models.CharField(max_length=100, blank=True, default='')
+    cmc = models.FloatField(default=0)
+    type_line = models.CharField(max_length=255, blank=True, default='')
+    oracle_text = models.TextField(blank=True, default='')
+    power = models.CharField(max_length=10, blank=True, null=True)
+    toughness = models.CharField(max_length=10, blank=True, null=True)
+    colors = models.JSONField(default=list)
+    color_identity = models.JSONField(default=list)
+    keywords = models.JSONField(default=list)
+    image_filename = models.CharField(max_length=255, blank=True, default='')
+    
+    # Fields for sorting in kernels
+    num_colors = models.IntegerField(default=0)
+    color_sort_key = models.CharField(max_length=20, default='')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    
+    def save(self, *args, **kwargs):
+        # Calculate num_colors and color_sort_key for kernels functionality
+        self.num_colors = len(self.color_identity)
+        
+        # Create color sort key based on WUBRG order
+        color_order = {'W': 1, 'U': 2, 'B': 3, 'R': 4, 'G': 5}
+        if not self.color_identity:
+            self.color_sort_key = '6_colorless'
+        else:
+            min_color = min(color_order.get(c, 6) for c in self.color_identity)
+            self.color_sort_key = f"{min_color}_{self.color_identity[0] if self.color_identity else 'colorless'}"
+        
+        super().save(*args, **kwargs)
     
     def __str__(self):
         return self.name
@@ -121,3 +151,32 @@ class Card(models.Model):
         card2 = random.choices(remaining_cards, weights=remaining_weights)[0]
         
         return card1, card2
+
+
+class Kernel(models.Model):
+    name = models.CharField(max_length=255)
+    order = models.IntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        ordering = ['order', 'created_at']
+    
+    def __str__(self):
+        return self.name
+
+
+class KernelCard(models.Model):
+    kernel = models.ForeignKey(Kernel, on_delete=models.CASCADE, related_name='cards')
+    card = models.ForeignKey(Card, on_delete=models.CASCADE)
+    added_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        unique_together = ('kernel', 'card')
+
+
+class CandidateCard(models.Model):
+    card = models.OneToOneField(Card, on_delete=models.CASCADE, related_name='candidate')
+    
+    def __str__(self):
+        return f"Candidate: {self.card.name}"

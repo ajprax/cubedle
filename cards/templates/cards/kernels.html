@@ -1,0 +1,90 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kernels - MTG Card Categorizer</title>
+    <link href="{% static 'kernels/static/css/main.69d33cef.css' %}" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background-color: #f5f5f5;
+        }
+        #root {
+            width: 100vw;
+            height: 100vh;
+        }
+        .back-link {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 10000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 12px;
+            border-radius: 4px;
+            text-decoration: none;
+            color: #666;
+            font-size: 14px;
+            border: 1px solid #ddd;
+        }
+        .back-link:hover {
+            background: white;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="back-link">← Back to Cube Voting</a>
+    
+    <div id="root"></div>
+    
+    <script>
+        // Check if we're in development mode
+        const isDevelopment = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        
+        if (isDevelopment) {
+            // In development, try to load from the dev server
+            fetch('http://localhost:3000')
+                .then(() => {
+                    // Dev server is running, use iframe
+                    const iframe = document.createElement('iframe');
+                    iframe.src = 'http://localhost:3000';
+                    iframe.style.width = '100%';
+                    iframe.style.height = '100%';
+                    iframe.style.border = 'none';
+                    iframe.style.position = 'fixed';
+                    iframe.style.top = '0';
+                    iframe.style.left = '0';
+                    iframe.style.zIndex = '1000';
+                    
+                    document.getElementById('root').innerHTML = '';
+                    document.getElementById('root').appendChild(iframe);
+                    
+                    // Add development notice
+                    const notice = document.createElement('div');
+                    notice.className = 'development-notice';
+                    notice.textContent = 'Development Mode (localhost:3000)';
+                    document.body.appendChild(notice);
+                })
+                .catch(() => {
+                    // Dev server not running, fall back to built version
+                    loadBuiltApp();
+                });
+        } else {
+            // Production mode - load built React app
+            loadBuiltApp();
+        }
+        
+        function loadBuiltApp() {
+            // The React app will be loaded by the script tags below
+        }
+    </script>
+    
+    <!-- Built React App Scripts -->
+    <script src="{% static 'kernels/static/js/453.670e15c7.chunk.js' %}"></script>
+    <script src="{% static 'kernels/static/js/main.e4e1a6f3.js' %}"></script>
+</body>
+</html>
