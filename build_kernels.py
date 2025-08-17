@@ -34,16 +34,27 @@ def main():
     print("📁 Copying build files to Django static directory...")
     if static_dir.exists():
         shutil.rmtree(static_dir)
-    shutil.copytree(build_dir, static_dir)
+    static_dir.mkdir(parents=True)
+    
+    # Copy static files (CSS and JS) to the root of kernels directory
+    build_static_dir = build_dir / "static"
+    if build_static_dir.exists():
+        shutil.copytree(build_static_dir, static_dir, dirs_exist_ok=True)
+    
+    # Copy other build files (index.html, manifest.json, etc.)
+    for item in build_dir.iterdir():
+        if item.is_file():
+            shutil.copy2(item, static_dir)
+    
     print("✅ Files copied successfully")
     
     # Step 3: Update template with correct file names
     print("📝 Updating template with correct file names...")
     
     # Find the main JS file
-    js_files = list((static_dir / "static" / "js").glob("main.*.js"))
-    chunk_files = list((static_dir / "static" / "js").glob("*.chunk.js"))
-    css_files = list((static_dir / "static" / "css").glob("main.*.css"))
+    js_files = list((static_dir / "js").glob("main.*.js"))
+    chunk_files = list((static_dir / "js").glob("*.chunk.js"))
+    css_files = list((static_dir / "css").glob("main.*.css"))
     
     if not js_files:
         print("❌ Could not find main JS file")
